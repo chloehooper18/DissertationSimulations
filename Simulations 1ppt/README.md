@@ -5,6 +5,12 @@ These notebooks walk through a series of simulations of a single electrode for a
 ### Simulating a single electrode for a single participant
 - Simulating electrode Cz for a single participant
 
-## 02 - Cz_to_C5_1ppt
+## 02 - Single_electrode_1ppt
 ### Simulating a single electrode for a single participant
-- Simulating central line (Cz, C1, C3 and C5) for a single participant
+- Simulating central line (Cz, C1, C3, C5 and T7) for a single participant
+- Logic can be applied to all electrodes based on correlations between the specified electrode and Cz
+
+## 03 - Electrode_cluster_1ppt
+### Simulating an electrode cluster for a single participant 
+- Simulating a small cluster of electrodes for a single participant
+- Code can be expanded to make the cluster bigger, include different electrodes etc. 
