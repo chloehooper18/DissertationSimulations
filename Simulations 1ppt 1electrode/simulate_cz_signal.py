@@ -1,6 +1,7 @@
 # simulate_cz_signal.py
 
-from neurodsp.sim import set_random_seed, create_times, sim_combined
+from neurodsp.sim import set_random_seed, sim_combined
+from neurodsp.utils import create_times
 
 def generate_cz_signal(seed=256, n_seconds=8, s_rate=250):
     """
