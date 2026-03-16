@@ -1,95 +1,17 @@
 """ Parameters for setting up an aperiodic Cz signal"""
-def setup_Cz_simulation_ap():
-    """
-    Initialise simulation parameters for Cz electrode signal with aperiodic noise only.
-
-    This function stores key simulation parameters in a dictionary,
-    sets the random seed for reproducibility, and creates the
-    simulation time vector based on the specified duration and
-    sampling rate.
-
-    Returns
-    -------
-    params : dict
-        Dictionary containing simulation parameters:
-        - 'seed' : int
-            Random seed used for reproducibility.
-        - 'n_seconds' : int
-            Duration of the simulation in seconds.
-        - 's_rate' : int
-            Sampling rate in Hz (samples per second).
-        - 'exponent' : float
-            Exponent value used in the power-law simulation.
-        - 'high_pass_filter' : float
-            High-pass filter cutoff frequency in Hz.    
-    times : array-like
-        Time vector generated from the simulation duration and
-        sampling rate.
-    """
-    # Imports
-    import numpy as np
-
-    from neurodsp.utils import create_times
-    from neurodsp.sim import set_random_seed
-
-    # Parameter store
-    params = {
-        "seed": 36,        # Seed number
-        "n_seconds": 25,   # Number of seconds
-        "s_rate": 1000,     # Sampling rate
-        "exponent": -1.5,   # Exponent value 
-        "high_pass_filter": 1 # High pass filter
-    }
-
-    # Set seed for consistency
-    set_random_seed(params["seed"])
-
-    # Simulation settings
-    times = create_times(params["n_seconds"], params["s_rate"])
-
-    return params, times
+cz_sim_params_ap = {
+    "seed": 36,            # Random seed for reproducibility
+    "n_seconds": 25,       # Duration of simulation (seconds)
+    "s_rate": 1000,        # Sampling rate (Hz)
+    "exponent": -1.5,      # Exponent for power-law signal
+    "high_pass_filter": 1  # High-pass filter cutoff (Hz)
+}
 
 # =====================================================================
 # =====================================================================
 
 """ Parameters for setting up an Cz signal that contains both aperiodic and periodic nosie"""
-def setup_Cz_simulation_full():
-    """
-    Initialise simulation parameters for Cz electrode signal with both aperiodic and periodic noise.
-
-    This function stores key simulation parameters in a dictionary,
-    sets the random seed for reproducibility, and creates the
-    simulation time vector based on the specified duration and
-    sampling rate.
-
-    Returns
-    -------
-    params : dict
-        Dictionary containing simulation parameters:
-        - 'seed' : int
-            Random seed used for reproducibility.
-        - 'n_seconds' : int
-            Duration of the simulation in seconds.
-        - 's_rate' : int
-            Sampling rate in Hz (samples per second).
-        - 'exponent' : float
-            Exponent value used in the power-law simulation.
-        - 'high_pass_filter' : float
-            High-pass filter cutoff frequency in Hz.  
-        - 'oscillation' : float
-            Frequency of the periodic oscillation in Hz.  
-    times : array-like
-        Time vector generated from the simulation duration and
-        sampling rate.
-    """
-    # Imports
-    import numpy as np
-
-    from neurodsp.utils import create_times
-    from neurodsp.sim import set_random_seed
-
-    # Parameter store
-    params = {
+cz_sim_params_full = {
         "seed": 36,        # Seed number
         "n_seconds": 25,   # Number of seconds
         "s_rate": 1000,     # Sampling rate
@@ -98,25 +20,72 @@ def setup_Cz_simulation_full():
         "oscillation": 10   # Frequency of periodic oscillation
     }
 
-    # Set seed for consistency
+# =====================================================================
+# =====================================================================
+
+def cz_seed(params):
+    """
+    Set the random seed for reproducibility.
+
+    Parameters
+    ----------
+    params : dict
+        Dictionary containing simulation parameters.
+        Must include the key 'seed'.
+    """
+    from neurodsp.sim import set_random_seed
+
     set_random_seed(params["seed"])
 
-    # Simulation settings
+# =====================================================================
+# =====================================================================
+
+def cz_times(params):
+    """
+    Create the time vector for the Cz simulation.
+
+    Parameters
+    ----------
+    params : dict
+        Dictionary containing simulation parameters.
+        Must include 'n_seconds' and 's_rate'.
+
+    Returns
+    -------
+    times : array-like
+        Time vector generated from the simulation duration
+        and sampling rate.
+    """
+    from neurodsp.utils import create_times
+
     times = create_times(params["n_seconds"], params["s_rate"])
 
-    return params, times
-
+    return times
 
 # =====================================================================
 # =====================================================================
 
 # Parameters for Welch spectral estimation
 
-params, times = setup_Cz_simulation_ap()
-welch_params = {
-    "nperseg": params["s_rate"],        # length of each segment in samples
-    "noverlap": params["s_rate"] // 2   # number of samples overlapping between segments
-}
+def welch_params(params):
+    """
+    Create Welch spectral estimation parameters.
+
+    Parameters
+    ----------
+    params : dict
+        Simulation parameter dictionary containing 's_rate'.
+
+    Returns
+    -------
+    dict
+        Dictionary of Welch parameters.
+    """
+
+    return {
+        "nperseg": params["s_rate"],
+        "noverlap": params["s_rate"] // 2
+    }
 
 # =====================================================================
 # =====================================================================
