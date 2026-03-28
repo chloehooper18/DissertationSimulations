@@ -4,7 +4,8 @@ cz_sim_params_ap = {
     "n_seconds": 25,       # Duration of simulation (seconds)
     "s_rate": 1000,        # Sampling rate (Hz)
     "exponent": -1.5,      # Exponent for power-law signal
-    "high_pass_filter": 1  # High-pass filter cutoff (Hz)
+    "high_pass_filter": 1,  # High-pass filter cutoff (Hz)
+    "low_pass_filter": 50   # Low-pass filter cutoff (Hz)
 }
 
 # =====================================================================
@@ -17,6 +18,7 @@ cz_sim_params_full = {
         "s_rate": 1000,     # Sampling rate
         "exponent": -1.5,   # Exponent value 
         "high_pass_filter": 1, # High pass filter
+        "low_pass_filter": 50,   # Low-pass filter cutoff (Hz)   
         "oscillation": 10   # Frequency of periodic oscillation
     }
 
