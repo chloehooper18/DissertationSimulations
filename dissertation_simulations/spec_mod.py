@@ -1,6 +1,7 @@
 def avg_specmod_exp(psds, freq_range):
     """
     Fit spectral models to PSDs and compute aperiodic exponents.
+    Works when electrodes are generated as a 1D array
 
     Parameters
     ----------

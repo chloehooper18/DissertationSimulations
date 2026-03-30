@@ -123,3 +123,68 @@ def generate_1D_electrodes_full(n_electrodes, exponents):
         params_list.append(params)
 
     return signals, params_list, times
+
+# ============================================
+# ============================================
+
+def generate_2D_electrodes_ap(n_rows, n_cols, exponents):
+    """
+    Generate a 2D grid of simulated aperiodic (1/f) EEG signals.
+
+    This function creates a grid of electrodes arranged in a 2D layout
+    (n_rows × n_cols), where each electrode is assigned an aperiodic
+    signal generated using a power-law model. Each electrode can have
+    a different exponent, allowing spatial variation in spectral properties.
+
+    Parameters
+    ----------
+    n_rows : int
+        Number of rows in the electrode grid.
+    n_cols : int
+        Number of columns in the electrode grid.
+    exponents : array-like
+        List or array of exponent values (length must equal n_rows * n_cols).
+        Each exponent defines the 1/f slope of the corresponding electrode signal.
+
+    Returns
+    -------
+    grid : np.ndarray
+        3D array of simulated signals with shape (n_rows, n_cols, n_timepoints).
+        Each entry grid[i, j, :] contains the time series for one electrode.
+    times : np.ndarray
+        Time vector corresponding to the simulated signals.
+
+    Notes
+    -----
+    - Signals are generated using the `sim_powerlaw` function from NeuroDSP.
+    - Simulation parameters (e.g., duration, sampling rate, frequency range)
+      are defined in `cz_sim_params_ap`.
+    - The time vector is created using `cz_times` with the same parameters.
+    - The order of exponents is assigned row-wise across the grid.
+    """
+    import numpy as np
+    from dissertation_simulations.params import cz_sim_params_ap, cz_times
+    from neurodsp.sim import sim_powerlaw
+
+    params = cz_sim_params_ap
+    times = cz_times(params)
+
+    grid = np.zeros((n_rows, n_cols, len(times)))
+
+    idx = 0
+    for i in range(n_rows):
+        for j in range(n_cols):
+
+            exp = exponents[idx]
+
+            signal = sim_powerlaw(
+                params["n_seconds"],
+                params["s_rate"],
+                exponent=exp,
+                f_range=[params["high_pass_filter"], params["low_pass_filter"]]
+            )
+
+            grid[i, j, :] = signal
+            idx += 1
+
+    return grid, times
