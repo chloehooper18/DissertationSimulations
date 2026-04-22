@@ -11,3 +11,10 @@
 - Includes both 1D arrays and 2D clusters of electrodes
 - Spectral Models are plotted for the simulations
 
+## dissertation_simulations
+### Collection of scripts that contain functions that I have create for these simulations 
+Includes:
+- Set paramters
+- Electrode signal generation
+- Generating 1D and 2D electrode arrays
+- Averaging time series, PSD and Spectral Model exponent functions 
