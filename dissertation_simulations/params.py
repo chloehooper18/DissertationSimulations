@@ -1,5 +1,5 @@
-""" Parameters for setting up an aperiodic Cz signal"""
-cz_sim_params_ap = {
+""" Parameters for setting up an aperiodic electrode signal"""
+electrode_sim_params_ap = {
     "seed": 36,            # Random seed for reproducibility
     "n_seconds": 25,       # Duration of simulation (seconds)
     "s_rate": 1000,        # Sampling rate (Hz)
@@ -11,8 +11,8 @@ cz_sim_params_ap = {
 # =====================================================================
 # =====================================================================
 
-""" Parameters for setting up an Cz signal that contains both aperiodic and periodic nosie"""
-cz_sim_params_full = {
+""" Parameters for setting up an electrode signal that contains both aperiodic and periodic nosie"""
+electrode_sim_params_full = {
         "seed": 36,        # Seed number
         "n_seconds": 25,   # Number of seconds
         "s_rate": 1000,     # Sampling rate
@@ -25,7 +25,7 @@ cz_sim_params_full = {
 # =====================================================================
 # =====================================================================
 
-def cz_seed(params):
+def electrode_seed(params):
     """
     Set the random seed for reproducibility.
 
@@ -42,9 +42,9 @@ def cz_seed(params):
 # =====================================================================
 # =====================================================================
 
-def cz_times(params):
+def electrode_times(params):
     """
-    Create the time vector for the Cz simulation.
+    Create the time vector for the single electrode simulation.
 
     Parameters
     ----------

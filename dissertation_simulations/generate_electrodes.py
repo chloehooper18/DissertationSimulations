@@ -19,7 +19,7 @@ def generate_1D_electrodes_ap(n_electrodes, exponents):
         Shared time vector.
     """
 
-    from dissertation_simulations.params import cz_sim_params_ap, cz_times
+    from dissertation_simulations.params import electrode_sim_params_ap, electrode_times
     from neurodsp.sim import sim_powerlaw
 
     # Safety check
@@ -27,14 +27,14 @@ def generate_1D_electrodes_ap(n_electrodes, exponents):
         raise ValueError("Number of exponents must match number of electrodes")
 
     # Base params
-    base_params = cz_sim_params_ap.copy()
+    base_params = electrode_sim_params_ap
 
     n_seconds = base_params["n_seconds"]
     fs = base_params["s_rate"]
     high_pass_filter = base_params["high_pass_filter"]
     low_pass_filter = base_params["low_pass_filter"]
 
-    times = cz_times(base_params)
+    times = electrode_times(base_params)
 
     signals = {}
     params_list = []
@@ -42,7 +42,7 @@ def generate_1D_electrodes_ap(n_electrodes, exponents):
     for i in range(n_electrodes):
 
         # Copy params for this electrode
-        params = base_params.copy()
+        params = base_params
         params["exponent"] = exponents[i]
 
         # Generate signal
@@ -83,7 +83,7 @@ def generate_1D_electrodes_full(n_electrodes, exponents):
         Shared time vector.
     """
 
-    from dissertation_simulations.params import cz_sim_params_full, cz_times
+    from dissertation_simulations.params import electrode_sim_params_full, electrode_times
     from neurodsp.sim import sim_powerlaw, sim_combined, sim_oscillation
 
     # Safety check
@@ -91,7 +91,7 @@ def generate_1D_electrodes_full(n_electrodes, exponents):
         raise ValueError("Number of exponents must match number of electrodes")
 
     # Base params
-    base_params = cz_sim_params_full.copy()
+    base_params = electrode_sim_params_full
 
     n_seconds = base_params["n_seconds"]
     fs = base_params["s_rate"]
@@ -99,7 +99,7 @@ def generate_1D_electrodes_full(n_electrodes, exponents):
     low_pass_filter = base_params["low_pass_filter"]
     freq = base_params["oscillation"]
 
-    times = cz_times(base_params)
+    times = electrode_times(base_params)
 
     signals = {}
     params_list = []
@@ -107,7 +107,7 @@ def generate_1D_electrodes_full(n_electrodes, exponents):
     for i in range(n_electrodes):
 
         # Copy params for this electrode
-        params = base_params.copy()
+        params = base_params
         params["exponent"] = exponents[i]
 
         # Generate signal
@@ -163,11 +163,11 @@ def generate_2D_electrodes_ap(n_rows, n_cols, exponents):
     - The order of exponents is assigned row-wise across the grid.
     """
     import numpy as np
-    from dissertation_simulations.params import cz_sim_params_ap, cz_times
+    from dissertation_simulations.params import electrode_sim_params_ap, electrode_times
     from neurodsp.sim import sim_powerlaw
 
-    params = cz_sim_params_ap
-    times = cz_times(params)
+    params = electrode_sim_params_ap
+    times = electrode_times(params)
 
     grid = np.zeros((n_rows, n_cols, len(times)))
 

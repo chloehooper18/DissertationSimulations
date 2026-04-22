@@ -25,13 +25,13 @@ def avg_psd(signals, params, plot_individual=False):
     import numpy as np
     import matplotlib.pyplot as plt
     from specparam.plts import plot_spectra
-    from dissertation_simulations.params import cz_sim_params_ap
+    from dissertation_simulations.params import electrode_sim_params_ap
     from dissertation_simulations.params import welch_params
     from neurodsp.spectral import compute_spectrum_welch
 
     psds = {}
 
-    params = cz_sim_params_ap.copy()
+    params = electrode_sim_params_ap
     welch_dict = welch_params(params)
 
     # -------------------------
