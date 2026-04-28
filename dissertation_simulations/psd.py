@@ -168,3 +168,153 @@ def avg_psd_2D(grid_signals, params, plot_individual=False):
     plt.show()
 
     return psds, avg_powers, freqs
+
+# ===========================================
+# ===========================================
+
+def avg_psd_distribution(
+    n_repeats,
+    n_electrodes,
+    plot=True,
+    base_params=None,
+    **param_overrides
+):
+    """
+    Simulate electrode signals, compute and average power spectral densities (PSDs),
+    fit a spectral model to the averaged PSD, and return a distribution of estimated
+    aperiodic exponents across repeated simulations.
+
+    This function mirrors `avg_time_series_distribution`, but performs averaging in
+    the frequency domain (PSD space) rather than the time domain.
+
+    Parameters
+    ----------
+    n_repeats : int
+        Number of simulation iterations to run.
+
+    n_electrodes : int
+        Number of electrodes (signals) to simulate and average per iteration.
+
+    plot : bool, optional, default: True
+        If True, plot a histogram of the estimated exponent distribution.
+
+    base_params : dict, optional
+        Dictionary of default simulation parameters. If None, uses
+        `electrode_sim_params_ap`.
+
+    **param_overrides
+        Keyword arguments used to override values in `base_params`.
+        Example: exponent=-1, n_seconds=10, s_rate=500
+
+        Returns
+    -------
+    all_exponents : np.ndarray
+        Array of estimated aperiodic exponents from each simulation iteration.
+
+    mean_exp : float
+        Mean of the estimated exponents across simulations.
+
+    std_exp : float
+        Standard deviation of the estimated exponents.
+
+    Notes
+    -----
+    - Signals are generated independently for each electrode and simulation.
+    - Power spectral densities are computed using Welch’s method.
+    - PSDs are averaged across electrodes before spectral parameterization.
+    - A spectral model is fit to the averaged PSD to estimate the aperiodic exponent.
+    - This approach differs from time-domain averaging by performing averaging
+      after transformation into the frequency domain.
+    """
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    from dissertation_simulations.params import (electrode_sim_params_ap, spectral_model_params, freq_range, welch_params)
+    from dissertation_simulations.generate_electrodes import generate_1D_electrodes_ap
+
+    from neurodsp.spectral import compute_spectrum_welch
+    from specparam import SpectralModel
+
+    # -------------------------
+    # Setup parameters
+    # -------------------------
+    if base_params is None:
+        params = electrode_sim_params_ap.copy()
+    else:
+        params = base_params.copy()
+
+    params.update(param_overrides)
+
+    if "exponent" not in params:
+        raise ValueError("You must specify 'exponent' in params or overrides.")
+
+    all_exponents = []
+
+    # -------------------------
+    # Simulation loop
+    # -------------------------
+    for _ in range(n_repeats):
+
+        exponents = [params["exponent"]] * n_electrodes
+
+        signals, _, _ = generate_1D_electrodes_ap(
+            n_electrodes,
+            exponents,
+            params
+        )
+
+        # -------------------------
+        # Compute PSDs per electrode
+        # -------------------------
+        welch_dict = welch_params(params)
+
+        psd_list = []
+        freqs = None
+
+        for signal in signals.values():
+
+            freqs, powers = compute_spectrum_welch(
+                signal,
+                fs=params["s_rate"],
+                **welch_dict
+            )
+
+            psd_list.append(powers)
+
+        # -------------------------
+        # Average PSD across electrodes
+        # -------------------------
+        avg_powers = np.mean(psd_list, axis=0)
+
+        # -------------------------
+        # Fit spectral model
+        # -------------------------
+        fm = SpectralModel(**spectral_model_params)
+        fm.fit(freqs, avg_powers, freq_range)
+
+        exp = fm.get_params('aperiodic', 'exponent')
+        all_exponents.append(exp)
+
+    # -------------------------
+    # Summary stats
+    # -------------------------
+    all_exponents = np.array(all_exponents)
+    mean_exp = np.mean(all_exponents)
+    std_exp = np.std(all_exponents)
+
+    # -------------------------
+    # Plot distribution
+    # -------------------------
+    if plot:
+        plt.hist(all_exponents, bins=20, alpha=0.7)
+        plt.axvline(mean_exp, linestyle='dashed')
+        plt.title(
+            f"PSD-averaged exponent distribution\n"
+            f"(Exponent={params['exponent']}, electrodes={n_electrodes})"
+        )
+        plt.xlabel("Estimated exponent")
+        plt.ylabel("Count")
+        plt.show()
+
+    return all_exponents, float(mean_exp), float(std_exp)

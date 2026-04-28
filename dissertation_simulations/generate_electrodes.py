@@ -1,4 +1,4 @@
-def generate_1D_electrodes_ap(n_electrodes, exponents):
+def generate_1D_electrodes_ap(n_electrodes, exponents, base_params):
     """
     Generate multiple aperiodic signals with different exponents.
 
@@ -8,6 +8,8 @@ def generate_1D_electrodes_ap(n_electrodes, exponents):
         Number of signals to generate.
     exponents : list of float
         List of exponents (one per electrode).
+    base_params : dict
+        Dictionary of simulation parameters.
 
     Returns
     -------
@@ -19,16 +21,14 @@ def generate_1D_electrodes_ap(n_electrodes, exponents):
         Shared time vector.
     """
 
-    from dissertation_simulations.params import electrode_sim_params_ap, electrode_times
     from neurodsp.sim import sim_powerlaw
+    from dissertation_simulations.params import electrode_times
 
     # Safety check
     if len(exponents) != n_electrodes:
         raise ValueError("Number of exponents must match number of electrodes")
 
-    # Base params
-    base_params = electrode_sim_params_ap
-
+    # Extract params
     n_seconds = base_params["n_seconds"]
     fs = base_params["s_rate"]
     high_pass_filter = base_params["high_pass_filter"]
@@ -41,11 +41,10 @@ def generate_1D_electrodes_ap(n_electrodes, exponents):
 
     for i in range(n_electrodes):
 
-        # Copy params for this electrode
-        params = base_params
+        # Copy params safely
+        params = base_params.copy()
         params["exponent"] = exponents[i]
 
-        # Generate signal
         signal = sim_powerlaw(
             n_seconds,
             fs,
@@ -53,7 +52,6 @@ def generate_1D_electrodes_ap(n_electrodes, exponents):
             f_range=[high_pass_filter, low_pass_filter]
         )
 
-        # Store
         signals[f"electrode_{i+1}"] = signal
         params_list.append(params)
 

@@ -124,4 +124,119 @@ def avg_ts_2D(signals, times):
 
     return avg_signal
 
-    
+# ===========================================
+# ===========================================
+
+def avg_time_series_distribution(
+    n_repeats,
+    n_electrodes,
+    plot=True,
+    base_params=None,
+    **param_overrides
+):
+    """
+    Simulate and estimate aperiodic exponents from averaged electrode signals,
+    allowing flexible overriding of simulation parameters.
+
+    Parameters
+    ----------
+    n_repeats : int
+        Number of simulation iterations to run.
+
+    n_electrodes : int, optional, default: 3
+        Number of electrodes (signals) to simulate and average.
+
+    plot : bool, optional, default: True
+        If True, plot a histogram of the estimated exponent distribution.
+
+    base_params : dict, optional
+        Dictionary of default simulation parameters. If None, uses
+        `electrode_sim_params_ap`.
+
+    **param_overrides
+        Keyword arguments used to override values in `base_params`.
+        Example: exponent=-1, n_seconds=10, s_rate=500
+
+    Returns
+    -------
+    all_exponents : np.ndarray
+        Array of estimated exponents from each simulation.
+
+    mean_exp : float
+        Mean of the estimated exponents across simulations.
+
+    std_exp : float
+        Standard deviation of the estimated exponents.
+
+    Notes
+    -----
+    - All simulation parameters (including exponent) are controlled via `base_params`
+      and `param_overrides`.
+    - Signals are averaged in the time domain before spectral estimation.
+    - Power spectra are computed using Welch’s method.
+    - A spectral model is fit to estimate the aperiodic exponent.
+    """
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    from dissertation_simulations.params import electrode_sim_params_ap, spectral_model_params, freq_range, welch_params
+    from dissertation_simulations.generate_electrodes import generate_1D_electrodes_ap
+
+    from neurodsp.spectral import compute_spectrum_welch
+    from specparam import SpectralModel
+
+    # --- Set base params ---
+    if base_params is None:
+        params = electrode_sim_params_ap.copy()
+    else:
+        params = base_params.copy()
+
+    # --- Apply overrides ---
+    params.update(param_overrides)
+
+    # --- Ensure exponent is specified ---
+    if "exponent" not in params:
+        raise ValueError("Parameter 'exponent' must be specified in base_params or overrides.")
+
+    all_exponents = []
+
+    for i in range(n_repeats):
+
+        # Use exponent from params
+        exponents = [params["exponent"]] * n_electrodes
+
+        signals, params_list, times = generate_1D_electrodes_ap(n_electrodes, exponents, params)
+
+        signal_array = np.array(list(signals.values()))
+        avg_signal = np.mean(signal_array, axis=0)
+
+        welch_dict = welch_params(params)
+
+        freqs, powers = compute_spectrum_welch(
+            avg_signal,
+            fs=params["s_rate"],
+            **welch_dict
+        )
+
+        fm = SpectralModel(**spectral_model_params)
+        fm.fit(freqs, powers, freq_range)
+
+        exp = fm.get_params('aperiodic', 'exponent')
+        all_exponents.append(exp)
+
+    all_exponents = np.array(all_exponents)
+    mean_exp = np.mean(all_exponents)
+    std_exp = np.std(all_exponents)
+
+    if plot:
+        plt.hist(all_exponents, bins=20)
+        plt.axvline(mean_exp, linestyle='dashed')
+        plt.title(
+            f"Exponent distribution (Exponent={params['exponent']}, electrodes per ppt={n_electrodes})"
+        )
+        plt.xlabel("Estimated exponent")
+        plt.ylabel("Count")
+        plt.show()
+
+    return all_exponents, float(mean_exp), float(std_exp)

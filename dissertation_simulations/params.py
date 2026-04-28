@@ -1,6 +1,5 @@
 """ Parameters for setting up an aperiodic electrode signal"""
 electrode_sim_params_ap = {
-    "seed": 36,            # Random seed for reproducibility
     "n_seconds": 25,       # Duration of simulation (seconds)
     "s_rate": 1000,        # Sampling rate (Hz)
     "exponent": -1.5,      # Exponent for power-law signal
@@ -13,7 +12,6 @@ electrode_sim_params_ap = {
 
 """ Parameters for setting up an electrode signal that contains both aperiodic and periodic nosie"""
 electrode_sim_params_full = {
-        "seed": 36,        # Seed number
         "n_seconds": 25,   # Number of seconds
         "s_rate": 1000,     # Sampling rate
         "exponent": -1.5,   # Exponent value 
