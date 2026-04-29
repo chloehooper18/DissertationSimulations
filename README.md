@@ -11,9 +11,20 @@
 - Includes both 1D arrays and 2D clusters of electrodes
 - Spectral Models are plotted for the simulations
 
-## 03 - Simulation loops
-### Averaging Time Series, PSDs and Spectral Model exponents for n repeats
-- Notebooks detailing code for averaging together signals at different points e.g., Time Series, PSD, Spectral Model exponent values
+## 03 - Avg Time Series exps
+### Averaging Time Series across different manipulations
+- Notebooks detailing code for averaging together Time Series signals
+- Contains multiple experiements that vary by different maniuplations
+
+## 04 - Avg PSD exps
+### Averaging PSDs across different manipulations
+- Notebooks detailing code for averaging together PSD signals
+- Contains multiple experiements that vary by different maniuplations
+
+## 05 - Avg SpecMod exponent exps
+### Averaging SpecMod exponent across different manipulations
+- Notebooks detailing code for averaging together SpecMod exponent signals
+- Contains multiple experiements that vary by different maniuplations 
 
 ## dissertation_simulations
 ### Collection of scripts that contain functions that I have create for these simulations 
