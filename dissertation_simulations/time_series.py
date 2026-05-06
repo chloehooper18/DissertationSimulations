@@ -135,8 +135,9 @@ def avg_time_series_distribution(
     **param_overrides
 ):
     """
-    Simulate and estimate aperiodic exponents from averaged electrode signals,
-    allowing flexible overriding of simulation parameters.
+    Simulate electrode signals, compute and average the time series, compute the PSD,
+    fit a spectral model to the PSD, and return a distribution of estimated
+    aperiodic exponents across repeated simulations.
 
     Parameters
     ----------
@@ -240,3 +241,323 @@ def avg_time_series_distribution(
         plt.show()
 
     return all_exponents, float(mean_exp), float(std_exp)
+
+# ===========================================
+# ===========================================
+
+def sweep_electrodes_1D(electrode_range, n_repeats, base_params=None, plot=True, return_full=False, **param_overrides):
+    """
+    Sweep number of electrodes and compute exponent estimation error.
+
+    Parameters
+    ----------
+    electrode_range : iterable
+        e.g. range(1, 10)
+
+    n_repeats : int
+        simulations per electrode count
+
+    base_params : dict or None
+        base simulation parameters
+
+    plot : bool
+        whether to plot error curve
+
+    return_full : bool
+        if True, also returns full distributions
+
+    **param_overrides :
+        ANY simulation parameter override (exponent, s_rate, etc.)
+
+    Returns
+    -------
+    electrode_counts, mean_exps, std_exps, errors
+    (optionally full_exponent_distributions)
+    """
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from dissertation_simulations.time_series import avg_time_series_distribution
+
+    mean_exps = []
+    std_exps = []
+    errors = []
+    all_distributions = []
+
+    true_exp = param_overrides.get("exponent", None)
+
+    for n_elec in electrode_range:
+
+        all_exps, mean_exp, std_exp = avg_time_series_distribution(
+            n_repeats=n_repeats,
+            n_electrodes=n_elec,
+            base_params=base_params,
+            plot=False,
+            **param_overrides
+        )
+
+        mean_exps.append(mean_exp)
+        std_exps.append(std_exp)
+
+        if true_exp is not None:
+            errors.append(mean_exp - -  true_exp) # ask Tom about this
+        else:
+            errors.append(np.nan)
+
+        if return_full:
+            all_distributions.append(all_exps)
+
+    if plot:
+        plt.figure()
+        plt.plot(list(electrode_range), errors, marker='o')
+        plt.axhline(0, linestyle='--')
+        plt.xlabel("Number of electrodes")
+        plt.ylabel("Bias (Estimated - True)")
+        plt.title("Exponent estimation error vs electrodes")
+        plt.show()
+
+    if return_full:
+        return (
+            np.array(list(electrode_range)),
+            np.array(mean_exps),
+            np.array(std_exps),
+            np.array(errors),
+            all_distributions
+        )
+
+    return (
+        np.array(list(electrode_range)),
+        np.array(mean_exps),
+        np.array(std_exps),
+        np.array(errors)
+    )
+
+# ===========================================
+# ===========================================
+
+def avg_time_series_distribution_2D(
+    n_repeats,
+    grid_shape,
+    plot=True,
+    base_params=None,
+    **param_overrides
+):
+    """
+    Simulate 2D electrode grid signals, average the time series,
+    compute the PSD of the averaged signal, fit a spectral model, and return
+    a distribution of estimated aperiodic exponents across repeated simulations.
+
+    Parameters
+    ----------
+    n_repeats : int
+        Number of simulation iterations to run.
+
+    grid_shape : tuple of int
+        Shape of the electrode grid as (n_rows, n_cols).
+
+    plot : bool, optional, default: True
+        If True, plot a histogram of the estimated exponent distribution.
+
+    base_params : dict, optional
+        Dictionary of default simulation parameters. If None, uses
+        `electrode_sim_params_ap`.
+
+    **param_overrides
+        Keyword arguments used to override values in `base_params`.
+        Example: exponent=-1, n_seconds=10, s_rate=500
+
+    Returns
+    -------
+    all_exponents : np.ndarray
+        Array of estimated exponents from each simulation.
+
+    mean_exp : float
+        Mean of the estimated exponents across simulations.
+
+    std_exp : float
+        Standard deviation of the estimated exponents.
+
+    Notes
+    -----
+    - Signals are averaged across the 2D spatial grid before spectral estimation.
+    - Power spectra are computed using Welch’s method.
+    - A spectral model is fit to estimate the aperiodic exponent.
+    """
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    from dissertation_simulations.params import electrode_sim_params_ap, spectral_model_params, freq_range, welch_params
+
+    from dissertation_simulations.generate_electrodes import generate_2D_electrodes_ap
+
+    from neurodsp.spectral import compute_spectrum_welch
+    from specparam import SpectralModel
+
+    # Setup params
+    if base_params is None:
+        params = electrode_sim_params_ap.copy()
+    else:
+        params = base_params.copy()
+
+    params.update(param_overrides)
+
+    if "exponent" not in params:
+        raise ValueError("Parameter 'exponent' must be specified.")
+
+    all_exponents = []
+
+    n_rows, n_cols = grid_shape
+
+    # Simulation loop
+    for _ in range(n_repeats):
+
+        # Create exponent grid
+        exponent_grid = np.full(n_rows * n_cols, params["exponent"])
+
+        grid_signals, times = generate_2D_electrodes_ap(
+            n_rows,
+            n_cols,
+            exponent_grid
+        )   
+
+        # Average time series (2D)
+        avg_signal = np.mean(grid_signals, axis=(0, 1))
+
+        # PSD
+        welch_dict = welch_params(params)
+
+        freqs, powers = compute_spectrum_welch(
+            avg_signal,
+            fs=params["s_rate"],
+            **welch_dict
+        )
+
+        # Spectral model
+        fm = SpectralModel(**spectral_model_params)
+        fm.fit(freqs, powers, freq_range)
+
+        exp = fm.get_params('aperiodic', 'exponent')
+        all_exponents.append(exp)
+
+    # Summary stats
+    all_exponents = np.array(all_exponents)
+    mean_exp = np.mean(all_exponents)
+    std_exp = np.std(all_exponents)
+
+    # Plot
+    if plot:
+        plt.hist(all_exponents, bins=20)
+        plt.axvline(mean_exp, linestyle='dashed')
+        plt.title(
+            f"2D Avg Signal Exponent Distribution\n"
+            f"(Exponent={params['exponent']}, grid={grid_shape})"
+        )
+        plt.xlabel("Estimated exponent")
+        plt.ylabel("Count")
+        plt.show()
+
+    return all_exponents, float(mean_exp), float(std_exp)
+
+# ===========================================
+# ===========================================
+
+def sweep_electrodes_2D(
+    grid_range,
+    n_repeats,
+    base_params=None,
+    plot=True,
+    return_full=False,
+    **param_overrides
+):
+    """
+    Sweep electrode grid sizes (e.g. 2x2, 3x3) and compute exponent estimation error.
+
+    Parameters
+    ----------
+    grid_range : iterable
+        e.g. [(2,2), (3,3), (4,4)] or [(r, r) for r in range(2, 6)]
+
+    n_repeats : int
+        simulations per grid size
+
+    base_params : dict or None
+        base simulation parameters
+
+    plot : bool
+        whether to plot error curve
+
+    return_full : bool
+        if True, also returns full distributions
+
+    **param_overrides :
+        ANY simulation parameter override (exponent, s_rate, etc.)
+
+    Returns
+    -------
+    grid_sizes, mean_exps, std_exps, errors
+    (optionally full_exponent_distributions)
+    """
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from dissertation_simulations.time_series import avg_time_series_distribution_2D
+
+    mean_exps = []
+    std_exps = []
+    errors = []
+    all_distributions = []
+
+    true_exp = param_overrides.get("exponent", None)
+
+    for grid_shape in grid_range:
+
+        all_exps, mean_exp, std_exp = avg_time_series_distribution_2D(
+            n_repeats=n_repeats,
+            grid_shape=grid_shape,
+            base_params=base_params,
+            plot=False,
+            **param_overrides
+        )
+
+        mean_exps.append(mean_exp)
+        std_exps.append(std_exp)
+
+        if true_exp is not None:
+            errors.append(mean_exp - - true_exp)  # fixed your typo here
+        else:
+            errors.append(np.nan)
+
+        if return_full:
+            all_distributions.append(all_exps)
+
+    # Plot
+    if plot:
+        grid_sizes = [r * c for r, c in grid_range]
+
+        plt.figure()
+        plt.plot(grid_sizes, errors, marker='o')
+        plt.axhline(0, linestyle='--')
+        plt.xlabel("Number of electrodes (grid size)")
+        plt.ylabel("Bias (Estimated - True)")
+        plt.title("Exponent estimation error vs 2D electrode grids")
+        plt.show()
+
+    # Return
+    grid_sizes = np.array([r * c for r, c in grid_range])
+
+    if return_full:
+        return (
+            grid_sizes,
+            np.array(mean_exps),
+            np.array(std_exps),
+            np.array(errors),
+            all_distributions
+        )
+
+    return (
+        grid_sizes,
+        np.array(mean_exps),
+        np.array(std_exps),
+        np.array(errors)
+    )
