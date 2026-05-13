@@ -187,6 +187,8 @@ def avg_time_series_distribution(
     from neurodsp.spectral import compute_spectrum_welch
     from specparam import SpectralModel
 
+    from dissertation_simulations.exponents import generate_random_electrode_exponents
+
     # --- Set base params ---
     if base_params is None:
         params = electrode_sim_params_ap.copy()
@@ -205,7 +207,18 @@ def avg_time_series_distribution(
     for i in range(n_repeats):
 
         # Use exponent from params
-        exponents = [params["exponent"]] * n_electrodes
+        if params.get("random_exponents", False):
+
+            exponents = generate_random_electrode_exponents(
+                n_electrodes=n_electrodes,
+                exp_range=params["exp_range"],
+                distribution=params.get("distribution", "uniform"))
+
+        else:
+
+            exponents = np.full(
+                n_electrodes,
+                params["exponent"])
 
         signals, params_list, times = generate_1D_electrodes_ap(n_electrodes, exponents, params)
 
@@ -309,11 +322,22 @@ def sweep_electrodes_1D(electrode_range, n_repeats, base_params=None, plot=True,
 
     if plot:
         plt.figure()
-        plt.plot(list(electrode_range), errors, marker='o')
-        plt.axhline(0, linestyle='--')
-        plt.xlabel("Number of electrodes")
-        plt.ylabel("Bias (Estimated - True)")
-        plt.title("Exponent estimation error vs electrodes")
+
+        if true_exp is not None:
+
+            plt.plot(list(electrode_range), errors, marker='o')
+            plt.axhline(0, linestyle='--')
+            plt.xlabel("Number of electrodes")
+            plt.ylabel("Bias (Estimated - True)")
+            plt.title("Exponent estimation error vs electrodes")
+
+        else:
+
+            plt.plot(list(electrode_range), mean_exps, marker='o')
+            plt.ylabel("Mean estimated exponent")
+            plt.xlabel("Number of electrodes")
+            plt.title("Exponent estimation vs electrodes")
+
         plt.show()
 
     if return_full:
@@ -394,6 +418,8 @@ def avg_time_series_distribution_2D(
     from neurodsp.spectral import compute_spectrum_welch
     from specparam import SpectralModel
 
+    from dissertation_simulations.exponents import generate_random_electrode_exponents
+
     # Setup params
     if base_params is None:
         params = electrode_sim_params_ap.copy()
@@ -413,7 +439,19 @@ def avg_time_series_distribution_2D(
     for _ in range(n_repeats):
 
         # Create exponent grid
-        exponent_grid = np.full(n_rows * n_cols, params["exponent"])
+        n_total = n_rows * n_cols
+
+        if params.get("random_exponents", False):
+
+            exponent_grid = generate_random_electrode_exponents(
+                n_electrodes=n_total,
+                exp_range=params["exp_range"],
+                distribution=params.get("distribution", "uniform"))
+
+        else:
+            exponent_grid = np.full(
+                n_total,
+                params["exponent"])
 
         grid_signals, times = generate_2D_electrodes_ap(
             n_rows,
@@ -524,7 +562,7 @@ def sweep_electrodes_2D(
         std_exps.append(std_exp)
 
         if true_exp is not None:
-            errors.append(mean_exp - - true_exp)  # fixed your typo here
+            errors.append(mean_exp - - true_exp)
         else:
             errors.append(np.nan)
 
@@ -534,13 +572,23 @@ def sweep_electrodes_2D(
     # Plot
     if plot:
         grid_sizes = [r * c for r, c in grid_range]
-
         plt.figure()
-        plt.plot(grid_sizes, errors, marker='o')
-        plt.axhline(0, linestyle='--')
-        plt.xlabel("Number of electrodes (grid size)")
-        plt.ylabel("Bias (Estimated - True)")
-        plt.title("Exponent estimation error vs 2D electrode grids")
+
+        if true_exp is not None:
+
+            plt.plot(list(grid_sizes), errors, marker='o')
+            plt.axhline(0, linestyle='--')
+            plt.xlabel("Number of electrodes")
+            plt.ylabel("Bias (Estimated - True)")
+            plt.title("Exponent estimation error vs electrodes")
+
+        else:
+
+            plt.plot(list(grid_sizes), mean_exps, marker='o')
+            plt.ylabel("Mean estimated exponent")
+            plt.xlabel("Number of electrodes")
+            plt.title("Exponent estimation vs electrodes")
+
         plt.show()
 
     # Return
