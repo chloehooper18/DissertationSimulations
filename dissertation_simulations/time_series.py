@@ -258,7 +258,7 @@ def avg_time_series_distribution(
 # ===========================================
 # ===========================================
 
-def sweep_electrodes_1D(electrode_range, n_repeats, base_params=None, plot=True, return_full=False, **param_overrides):
+def sweep_electrodes_ts_1D(electrode_range, n_repeats, base_params=None, plot=True, return_full=False, **param_overrides):
     """
     Sweep number of electrodes and compute exponent estimation error.
 
@@ -500,7 +500,7 @@ def avg_time_series_distribution_2D(
 # ===========================================
 # ===========================================
 
-def sweep_electrodes_2D(
+def sweep_electrodes_ts_2D(
     grid_range,
     n_repeats,
     base_params=None,
