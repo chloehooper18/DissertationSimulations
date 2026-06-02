@@ -3,5 +3,5 @@ Result summaries/
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
-pyproject
+pyproject.toml
 dissertation_simulations.eeg-info/
