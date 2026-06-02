@@ -240,14 +240,14 @@ def sweep_electrodes_specmod_1D(
     import matplotlib.pyplot as plt
     import numpy as np
 
-    from dissertation_simulations.spec_mod import (
-        avg_specmod_exponent_distribution
-    )
+    from dissertation_simulations.spec_mod import avg_specmod_exponent_distribution
+    from dissertation_simulations.plotting import plot_sweep_results
 
     mean_exps = []
     std_exps = []
     errors = []
     all_distributions = []
+    fig=None
 
     true_exp = param_overrides.get("exponent", None)
 
@@ -281,63 +281,20 @@ def sweep_electrodes_specmod_1D(
 
             all_distributions.append(all_exps)
 
-    # -----------------------------------
-    # Plot
-    # -----------------------------------
+    # Plotting function
     if plot:
 
-        plt.figure()
+        fig = plot_sweep_results(
+            x_values=list(electrode_range),
+            mean_exps=mean_exps,
+            errors=errors,
+            true_exp=true_exp,
+            std_exps=std_exps,
+            xlabel="Number of electrodes",
+            title_prefix="1D spectral model exponent estimation"
+        )
 
-        if true_exp is not None:
-
-            plt.plot(
-                list(electrode_range),
-                errors,
-                marker='o'
-            )
-
-            plt.axhline(
-                0,
-                linestyle='--'
-            )
-
-            plt.xlabel(
-                "Number of electrodes"
-            )
-
-            plt.ylabel(
-                "Bias (Estimated - True)"
-            )
-
-            plt.title(
-                "Individual Spectral Model Error vs Electrodes"
-            )
-
-        else:
-
-            plt.plot(
-                list(electrode_range),
-                mean_exps,
-                marker='o'
-            )
-
-            plt.ylabel(
-                "Mean estimated exponent"
-            )
-
-            plt.xlabel(
-                "Number of electrodes"
-            )
-
-            plt.title(
-                "Individual Spectral Model vs Electrodes"
-            )
-
-        plt.show()
-
-    # -----------------------------------
-    # Return
-    # -----------------------------------
+# Returns
     if return_full:
 
         return (
@@ -352,7 +309,8 @@ def sweep_electrodes_specmod_1D(
         np.array(list(electrode_range)),
         np.array(mean_exps),
         np.array(std_exps),
-        np.array(errors)
+        np.array(errors),
+        fig
     )
 
 # ===========================================
@@ -462,24 +420,25 @@ def avg_specmod_exponent_distribution_2D(
     for _ in range(n_repeats):
 
         # Generate exponents
-        if params.get("random_exponents", False):
+        if "exponent_matrix" in params:
 
-            exponent_grid = (
-                generate_random_electrode_exponents(
-                    n_electrodes=n_total,
-                    exp_range=params["exp_range"],
-                    distribution=params.get(
-                        "distribution",
-                        "uniform"
-                    )
-                )
+            exponent_grid = params["exponent_matrix"]
+
+        elif params.get("random_exponents", False):
+
+            exponent_grid = generate_random_electrode_exponents(
+            n_electrodes=n_total,
+            exp_range=params["exp_range"],
+            distribution=params.get("distribution", "uniform")
             )
+
+            exponent_grid = np.array(exponent_grid).reshape(n_rows, n_cols)
 
         else:
 
             exponent_grid = np.full(
-                n_total,
-                params["exponent"]
+            (n_rows, n_cols),
+            params["exponent"]
             )
 
         # -----------------------------------
@@ -659,12 +618,14 @@ def sweep_electrodes_specmod_2D(
     import numpy as np
     import matplotlib.pyplot as plt
 
-    from dissertation_simulations.spec_mod import (avg_specmod_exponent_distribution_2D)
+    from dissertation_simulations.spec_mod import avg_specmod_exponent_distribution_2D
+    from dissertation_simulations.plotting import plot_sweep_results
 
     mean_exps = []
     std_exps = []
     errors = []
     all_distributions = []
+    fig=None
 
     true_exp = param_overrides.get("exponent", None)
 
@@ -694,41 +655,22 @@ def sweep_electrodes_specmod_2D(
         if return_full:
             all_distributions.append(all_exps)
 
-    # ---------------------------------
-    # Plot
-    # ---------------------------------
-    grid_sizes = [r * c for r, c in grid_range]
+        grid_sizes = np.array([r * c for r, c in grid_range])
 
+#Plot
     if plot:
 
-        plt.figure()
+        fig = plot_sweep_results(
+            x_values=grid_sizes,
+            mean_exps=mean_exps,
+            errors=errors,
+            true_exp=true_exp,
+            std_exps=std_exps,
+            xlabel="Number of electrodes",
+            title_prefix="2D spectral model exponent estimation"
+        )
 
-        if true_exp is not None:
-
-            plt.plot(grid_sizes, errors, marker='o')
-            plt.axhline(0, linestyle='--')
-
-            plt.xlabel("Number of electrodes")
-            plt.ylabel("Bias (Estimated - True)")
-            plt.title(
-                "SpecParam exponent estimation error vs electrodes"
-            )
-
-        else:
-
-            plt.plot(grid_sizes, mean_exps, marker='o')
-
-            plt.xlabel("Number of electrodes")
-            plt.ylabel("Mean estimated exponent")
-            plt.title(
-                "SpecParam exponent estimation vs electrodes"
-            )
-
-        plt.show()
-
-    # ---------------------------------
-    # Return
-    # ---------------------------------
+# Returns
     grid_sizes = np.array(grid_sizes)
 
     if return_full:
@@ -745,5 +687,6 @@ def sweep_electrodes_specmod_2D(
         grid_sizes,
         np.array(mean_exps),
         np.array(std_exps),
-        np.array(errors)
+        np.array(errors),
+        fig
     )

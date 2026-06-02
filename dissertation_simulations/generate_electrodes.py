@@ -126,42 +126,12 @@ def generate_1D_electrodes_full(n_electrodes, exponents):
 # ============================================
 
 def generate_2D_electrodes_ap(n_rows, n_cols, exponents):
-    """
-    Generate a 2D grid of simulated aperiodic (1/f) EEG signals.
 
-    This function creates a grid of electrodes arranged in a 2D layout
-    (n_rows × n_cols), where each electrode is assigned an aperiodic
-    signal generated using a power-law model. Each electrode can have
-    a different exponent, allowing spatial variation in spectral properties.
-
-    Parameters
-    ----------
-    n_rows : int
-        Number of rows in the electrode grid.
-    n_cols : int
-        Number of columns in the electrode grid.
-    exponents : array-like
-        List or array of exponent values (length must equal n_rows * n_cols).
-        Each exponent defines the 1/f slope of the corresponding electrode signal.
-
-    Returns
-    -------
-    grid : np.ndarray
-        3D array of simulated signals with shape (n_rows, n_cols, n_timepoints).
-        Each entry grid[i, j, :] contains the time series for one electrode.
-    times : np.ndarray
-        Time vector corresponding to the simulated signals.
-
-    Notes
-    -----
-    - Signals are generated using the `sim_powerlaw` function from NeuroDSP.
-    - Simulation parameters (e.g., duration, sampling rate, frequency range)
-      are defined in `cz_sim_params_ap`.
-    - The time vector is created using `cz_times` with the same parameters.
-    - The order of exponents is assigned row-wise across the grid.
-    """
     import numpy as np
-    from dissertation_simulations.params import electrode_sim_params_ap, electrode_times
+    from dissertation_simulations.params import (
+        electrode_sim_params_ap,
+        electrode_times
+    )
     from neurodsp.sim import sim_powerlaw
 
     params = electrode_sim_params_ap
@@ -169,20 +139,50 @@ def generate_2D_electrodes_ap(n_rows, n_cols, exponents):
 
     grid = np.zeros((n_rows, n_cols, len(times)))
 
-    idx = 0
+    # -------------------------
+    # Handle exponent input
+    # -------------------------
+    exponents = np.array(exponents)
+
+    if exponents.ndim == 1:
+
+        if len(exponents) != n_rows * n_cols:
+            raise ValueError(
+                "1D exponent array must have length n_rows * n_cols"
+            )
+
+        exponents = exponents.reshape(n_rows, n_cols)
+
+    elif exponents.ndim == 2:
+
+        if exponents.shape != (n_rows, n_cols):
+            raise ValueError(
+                "2D exponent matrix shape mismatch"
+            )
+
+    else:
+        raise ValueError(
+            "Exponents must be 1D or 2D"
+        )
+
+    # -------------------------
+    # Generate signals
+    # -------------------------
     for i in range(n_rows):
         for j in range(n_cols):
 
-            exp = exponents[idx]
+            exp = exponents[i, j]
 
             signal = sim_powerlaw(
                 params["n_seconds"],
                 params["s_rate"],
                 exponent=exp,
-                f_range=[params["high_pass_filter"], params["low_pass_filter"]]
+                f_range=[
+                    params["high_pass_filter"],
+                    params["low_pass_filter"]
+                ]
             )
 
             grid[i, j, :] = signal
-            idx += 1
 
     return grid, times
