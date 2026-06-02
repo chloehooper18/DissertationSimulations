@@ -1,0 +1,7 @@
+Figures/
+Result summaries/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+pyproject
+dissertation_simulations.eeg-info/
