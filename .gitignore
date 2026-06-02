@@ -4,4 +4,4 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 pyproject.toml
-dissertation_simulations.eeg-info/
+dissertation_simulations.egg-info
