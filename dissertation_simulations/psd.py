@@ -753,13 +753,13 @@ def sweep_electrodes_psd_2D(
     grid_sizes = np.array(grid_sizes)
 
     if return_full:
-
         return (
             grid_sizes,
             np.array(mean_exps),
             np.array(std_exps),
             np.array(errors),
-            all_distributions
+            all_distributions,
+            fig
         )
 
     return (

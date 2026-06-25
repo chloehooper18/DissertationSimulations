@@ -261,8 +261,12 @@ def generate_spatial_exponent_matrix(
 
         values = (X + Y) / 2
 
-    elif pattern == "radial":
+    elif pattern == "middle":
 
+         values = np.abs(X - 0.5)
+         values = values / values.max()
+    
+    elif pattern == "radial":
         cx, cy = 0.5, 0.5
         values = np.sqrt((X - cx)**2 + (Y - cy)**2)
 
@@ -273,7 +277,7 @@ def generate_spatial_exponent_matrix(
             values = np.zeros_like(values)
         else:
             values = (values - values.min()) / range_val
-
+    
     else:
         raise ValueError("Unknown pattern")
 
