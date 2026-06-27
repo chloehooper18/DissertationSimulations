@@ -93,7 +93,8 @@ def generate_2D_exponent_matrix(
     distribution="uniform",
     gradient_axis=None,
     gradient_range=None,
-    random_state=None
+    random_state=None,
+    outlier=None
 ):
     """
     Generate a 2D matrix of exponents for electrode simulations.
@@ -198,6 +199,30 @@ def generate_2D_exponent_matrix(
             raise ValueError(
                 "distribution must be 'uniform' or 'normal'"
             )
+    
+    # ---------------------------------
+    # Add optional outlier
+    # ---------------------------------
+    if outlier is not None:
+
+        value = outlier.get("value", -0.5)
+        location = outlier.get("location", "last")
+
+        if location == "last":
+            exponent_matrix[-1, -1] = value
+
+        elif location == "centre":
+            exponent_matrix[n_rows // 2, n_cols // 2] = value
+
+        elif location == "random":
+            row = np.random.randint(0, n_rows)
+            col = np.random.randint(0, n_cols)
+            exponent_matrix[row, col] = value
+
+        else:
+            # tuple such as (row, col)
+            row, col = location
+            exponent_matrix[row, col] = value
 
     return exponent_matrix
 
@@ -208,7 +233,8 @@ def generate_spatial_exponent_matrix(
     grid_shape,
     exp_min=-2,
     exp_max=-0.5,
-    pattern="horizontal"
+    pattern="horizontal", 
+    outlier=None
 ):
     """
     Generate a spatially varying exponent matrix.
@@ -283,5 +309,34 @@ def generate_spatial_exponent_matrix(
 
     # Scale into exponent range
     exponent_matrix = exp_min + values * (exp_max - exp_min)
+
+    # ---------------------------------
+    # Add optional outlier
+    # ---------------------------------
+    if outlier is not None:
+
+        value = outlier.get("value", exp_max)
+
+        location = outlier.get("location", "last")
+
+        if location == "last":
+            exponent_matrix[-1, -1] = value
+
+        elif location == "centre":
+            exponent_matrix[n_rows // 2, n_cols // 2] = value
+
+        elif location == "random":
+            row = np.random.randint(0, n_rows)
+            col = np.random.randint(0, n_cols)
+            exponent_matrix[row, col] = value
+
+        elif isinstance(location, tuple):
+            row, col = location
+            exponent_matrix[row, col] = value
+
+        else:
+            raise ValueError(
+                "location must be 'last', 'centre', 'random', or a (row, col) tuple."
+            )
 
     return exponent_matrix
