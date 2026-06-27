@@ -584,7 +584,24 @@ def avg_psd_distribution_2D(
         # -----------------------------------
         # Average PSD
         # -----------------------------------
-        avg_powers = np.mean(psd_list, axis=0)
+        psd_array = np.array(psd_list)
+
+        psd_average_space = params.get("psd_average_space", "linear")
+
+        if psd_average_space == "linear":
+
+            avg_powers = np.mean(psd_array, axis=0)
+
+        elif psd_average_space == "log":
+
+            avg_log_powers = np.mean(np.log10(psd_array), axis=0)
+            avg_powers = 10 ** avg_log_powers
+
+        else:
+
+            raise ValueError(
+                "psd_average_space must be either 'linear' or 'log'."
+            )
 
         # -----------------------------------
         # Fit spectral model
@@ -748,6 +765,8 @@ def sweep_electrodes_psd_2D(
             xlabel="Number of electrodes",
             title_prefix="2D PSD exponent estimation"
         )
+
+    print(param_overrides)
 
 # Returns
     grid_sizes = np.array(grid_sizes)
