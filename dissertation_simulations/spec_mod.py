@@ -398,7 +398,8 @@ def avg_specmod_exponent_distribution_2D(
         grid_signals, times = generate_2D_electrodes_ap(
             n_rows,
             n_cols,
-            exponent_grid
+            exponent_grid,
+            params=params
         )
 
         welch_dict = welch_params(params)

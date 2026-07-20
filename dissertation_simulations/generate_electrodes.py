@@ -125,23 +125,30 @@ def generate_1D_electrodes_full(n_electrodes, exponents):
 # ============================================
 # ============================================
 
-def generate_2D_electrodes_ap(n_rows, n_cols, exponents):
-
+def generate_2D_electrodes_ap(
+    n_rows,
+    n_cols,
+    exponents,
+    params=None
+):
     import numpy as np
+
     from dissertation_simulations.params import (
         electrode_sim_params_ap,
         electrode_times
     )
-    from neurodsp.sim import sim_powerlaw
 
-    params = electrode_sim_params_ap
+    from neurodsp.sim import sim_powerlaw, sim_oscillation
+
+    if params is None:
+        params = electrode_sim_params_ap.copy()
+    else:
+        params = params.copy()
+
     times = electrode_times(params)
 
     grid = np.zeros((n_rows, n_cols, len(times)))
 
-    # -------------------------
-    # Handle exponent input
-    # -------------------------
     exponents = np.array(exponents)
 
     if exponents.ndim == 1:
@@ -165,9 +172,6 @@ def generate_2D_electrodes_ap(n_rows, n_cols, exponents):
             "Exponents must be 1D or 2D"
         )
 
-    # -------------------------
-    # Generate signals
-    # -------------------------
     for i in range(n_rows):
         for j in range(n_cols):
 
@@ -182,6 +186,16 @@ def generate_2D_electrodes_ap(n_rows, n_cols, exponents):
                     params["low_pass_filter"]
                 ]
             )
+
+            if params.get("oscillation", None) is not None:
+
+                osc = sim_oscillation(
+                    params["n_seconds"],
+                    params["s_rate"],
+                    freq=params["oscillation"]
+                )
+
+                signal = signal + osc
 
             grid[i, j, :] = signal
 
