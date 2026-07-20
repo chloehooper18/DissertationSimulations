@@ -321,55 +321,10 @@ def avg_specmod_exponent_distribution_2D(
     grid_shape,
     plot=True,
     base_params=None,
+    fit_freq_range=None,
+    verbose=False,
     **param_overrides
 ):
-    """
-    Simulate 2D electrode grid signals, compute individual PSDs,
-    fit spectral models to each electrode separately, average the
-    resulting aperiodic exponents, and return a distribution across
-    repeated simulations.
-
-    This approach differs from other pipelines in that spectral
-    parameterization is performed at the single-electrode level
-    before averaging.
-
-    Parameters
-    ----------
-    n_repeats : int
-        Number of simulation iterations to run.
-
-    grid_shape : tuple of int
-        Shape of electrode grid as (n_rows, n_cols).
-
-    plot : bool, optional, default: True
-        If True, plot histogram of averaged exponent distribution.
-
-    base_params : dict, optional
-        Dictionary of default simulation parameters.
-        If None, uses `electrode_sim_params_ap`.
-
-    **param_overrides
-        Keyword arguments used to override values in `base_params`.
-
-    Returns
-    -------
-    all_mean_exponents : np.ndarray
-        Mean exponent from each simulation iteration.
-
-    mean_exp : float
-        Mean of simulation-level averaged exponents.
-
-    std_exp : float
-        Standard deviation of simulation-level averaged exponents.
-
-    Notes
-    -----
-    - PSDs are computed per electrode using Welch’s method.
-    - Each PSD is fit independently with a spectral model.
-    - Exponents are averaged across electrodes within each simulation.
-    - Final output is a distribution of these per-simulation means.
-    """
-
     import numpy as np
     import matplotlib.pyplot as plt
 
@@ -391,15 +346,18 @@ def avg_specmod_exponent_distribution_2D(
     from neurodsp.spectral import compute_spectrum_welch
     from specparam import SpectralModel
 
-    # -----------------------------------
-    # Setup params
-    # -----------------------------------
     if base_params is None:
         params = electrode_sim_params_ap.copy()
     else:
         params = base_params.copy()
 
     params.update(param_overrides)
+
+    if fit_freq_range is None:
+        fit_freq_range = freq_range
+
+    if verbose:
+        print("Using fit_freq_range:", fit_freq_range)
 
     if (
         "exponent" not in params
@@ -414,12 +372,8 @@ def avg_specmod_exponent_distribution_2D(
     n_rows, n_cols = grid_shape
     n_total = n_rows * n_cols
 
-    # -----------------------------------
-    # Simulation loop
-    # -----------------------------------
     for _ in range(n_repeats):
 
-        # Generate exponents
         if "exponent_matrix" in params:
 
             exponent_grid = params["exponent_matrix"]
@@ -427,9 +381,9 @@ def avg_specmod_exponent_distribution_2D(
         elif params.get("random_exponents", False):
 
             exponent_grid = generate_random_electrode_exponents(
-            n_electrodes=n_total,
-            exp_range=params["exp_range"],
-            distribution=params.get("distribution", "uniform")
+                n_electrodes=n_total,
+                exp_range=params["exp_range"],
+                distribution=params.get("distribution", "uniform")
             )
 
             exponent_grid = np.array(exponent_grid).reshape(n_rows, n_cols)
@@ -437,83 +391,55 @@ def avg_specmod_exponent_distribution_2D(
         else:
 
             exponent_grid = np.full(
-            (n_rows, n_cols),
-            params["exponent"]
+                (n_rows, n_cols),
+                params["exponent"]
             )
 
-        # -----------------------------------
-        # Generate signals
-        # -----------------------------------
-        grid_signals, times = (
-            generate_2D_electrodes_ap(
-                n_rows,
-                n_cols,
-                exponent_grid
-            )
+        grid_signals, times = generate_2D_electrodes_ap(
+            n_rows,
+            n_cols,
+            exponent_grid
         )
 
         welch_dict = welch_params(params)
 
         electrode_exponents = []
 
-        # -----------------------------------
-        # Fit each electrode individually
-        # -----------------------------------
         for i in range(n_rows):
             for j in range(n_cols):
 
                 signal = grid_signals[i, j]
 
-                freqs, powers = (
-                    compute_spectrum_welch(
-                        signal,
-                        fs=params["s_rate"],
-                        **welch_dict
-                    )
+                freqs, powers = compute_spectrum_welch(
+                    signal,
+                    fs=params["s_rate"],
+                    **welch_dict
                 )
 
-                fm = SpectralModel(
-                    **spectral_model_params
-                )
+                fm = SpectralModel(**spectral_model_params)
 
                 fm.fit(
                     freqs,
                     powers,
-                    freq_range
+                    fit_freq_range
                 )
 
                 exp = fm.get_params(
-                    'aperiodic',
-                    'exponent'
+                    "aperiodic",
+                    "exponent"
                 )
 
                 electrode_exponents.append(exp)
 
-        # -----------------------------------
-        # Average across electrodes
-        # -----------------------------------
         all_mean_exponents.append(
             np.mean(electrode_exponents)
         )
 
-    # -----------------------------------
-    # Summary stats
-    # -----------------------------------
-    all_mean_exponents = np.array(
-        all_mean_exponents
-    )
+    all_mean_exponents = np.array(all_mean_exponents)
 
-    mean_exp = np.mean(
-        all_mean_exponents
-    )
+    mean_exp = np.mean(all_mean_exponents)
+    std_exp = np.std(all_mean_exponents)
 
-    std_exp = np.std(
-        all_mean_exponents
-    )
-
-    # -----------------------------------
-    # Plot distribution
-    # -----------------------------------
     if plot:
 
         plt.hist(
@@ -524,15 +450,12 @@ def avg_specmod_exponent_distribution_2D(
 
         plt.axvline(
             mean_exp,
-            linestyle='dashed'
+            linestyle="dashed"
         )
 
         if params.get("random_exponents", False):
-
             title_exp = params["exp_range"]
-
         else:
-
             title_exp = params["exponent"]
 
         plt.title(
@@ -690,3 +613,5 @@ def sweep_electrodes_specmod_2D(
         np.array(errors),
         fig
     )
+
+

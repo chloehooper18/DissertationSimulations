@@ -436,51 +436,10 @@ def avg_psd_distribution_2D(
     grid_shape,
     plot=True,
     base_params=None,
+    fit_freq_range=None,
+    verbose=False,
     **param_overrides
 ):
-    """
-    Simulate 2D electrode grid signals, compute PSDs for each electrode,
-    average the PSDs across the grid, fit a spectral model to the averaged
-    PSD, and return a distribution of estimated aperiodic exponents across
-    repeated simulations.
-
-    Parameters
-    ----------
-    n_repeats : int
-        Number of simulation iterations to run.
-
-    grid_shape : tuple of int
-        Shape of the electrode grid as (n_rows, n_cols).
-
-    plot : bool, optional, default: True
-        If True, plot a histogram of the estimated exponent distribution.
-
-    base_params : dict, optional
-        Dictionary of default simulation parameters.
-        If None, uses `electrode_sim_params_ap`.
-
-    **param_overrides
-        Keyword arguments used to override values in `base_params`.
-
-    Returns
-    -------
-    all_exponents : np.ndarray
-        Array of estimated exponents from each simulation.
-
-    mean_exp : float
-        Mean of estimated exponents across simulations.
-
-    std_exp : float
-        Standard deviation of estimated exponents.
-
-    Notes
-    -----
-    - Signals are generated independently for each electrode.
-    - PSDs are computed separately for each electrode.
-    - PSDs are averaged across the 2D electrode grid.
-    - Spectral parameterization is performed on the averaged PSD.
-    """
-
     import numpy as np
     import matplotlib.pyplot as plt
 
@@ -502,15 +461,18 @@ def avg_psd_distribution_2D(
     from neurodsp.spectral import compute_spectrum_welch
     from specparam import SpectralModel
 
-    # -----------------------------------
-    # Setup params
-    # -----------------------------------
     if base_params is None:
         params = electrode_sim_params_ap.copy()
     else:
         params = base_params.copy()
 
     params.update(param_overrides)
+
+    if fit_freq_range is None:
+        fit_freq_range = freq_range
+
+    if verbose:
+        print("Using fit_freq_range:", fit_freq_range)
 
     if (
         "exponent" not in params
@@ -525,12 +487,8 @@ def avg_psd_distribution_2D(
     n_rows, n_cols = grid_shape
     n_total = n_rows * n_cols
 
-    # -----------------------------------
-    # Simulation loop
-    # -----------------------------------
     for _ in range(n_repeats):
 
-        # Generate exponents
         if "exponent_matrix" in params:
 
             exponent_grid = params["exponent_matrix"]
@@ -538,9 +496,9 @@ def avg_psd_distribution_2D(
         elif params.get("random_exponents", False):
 
             exponent_grid = generate_random_electrode_exponents(
-            n_electrodes=n_total,
-            exp_range=params["exp_range"],
-            distribution=params.get("distribution", "uniform")
+                n_electrodes=n_total,
+                exp_range=params["exp_range"],
+                distribution=params.get("distribution", "uniform")
             )
 
             exponent_grid = np.array(exponent_grid).reshape(n_rows, n_cols)
@@ -548,22 +506,16 @@ def avg_psd_distribution_2D(
         else:
 
             exponent_grid = np.full(
-            (n_rows, n_cols),
-            params["exponent"]
+                (n_rows, n_cols),
+                params["exponent"]
             )
 
-        # -----------------------------------
-        # Generate signals
-        # -----------------------------------
         grid_signals, times = generate_2D_electrodes_ap(
             n_rows,
             n_cols,
             exponent_grid
         )
 
-        # -----------------------------------
-        # Compute PSDs
-        # -----------------------------------
         welch_dict = welch_params(params)
 
         psd_list = []
@@ -581,9 +533,6 @@ def avg_psd_distribution_2D(
 
                 psd_list.append(powers)
 
-        # -----------------------------------
-        # Average PSD
-        # -----------------------------------
         psd_array = np.array(psd_list)
 
         psd_average_space = params.get("psd_average_space", "linear")
@@ -603,46 +552,38 @@ def avg_psd_distribution_2D(
                 "psd_average_space must be either 'linear' or 'log'."
             )
 
-        # -----------------------------------
-        # Fit spectral model
-        # -----------------------------------
         fm = SpectralModel(**spectral_model_params)
 
-        fm.fit(freqs, avg_powers, freq_range)
+        fm.fit(
+            freqs,
+            avg_powers,
+            fit_freq_range
+        )
 
         exp = fm.get_params(
-            'aperiodic',
-            'exponent'
+            "aperiodic",
+            "exponent"
         )
 
         all_exponents.append(exp)
 
-    # -----------------------------------
-    # Summary stats
-    # -----------------------------------
     all_exponents = np.array(all_exponents)
 
     mean_exp = np.mean(all_exponents)
     std_exp = np.std(all_exponents)
 
-    # -----------------------------------
-    # Plot
-    # -----------------------------------
     if plot:
 
         plt.hist(all_exponents, bins=20)
 
         plt.axvline(
             mean_exp,
-            linestyle='dashed'
+            linestyle="dashed"
         )
 
         if params.get("random_exponents", False):
-
             title_exp = params["exp_range"]
-
         else:
-
             title_exp = params["exponent"]
 
         plt.title(
