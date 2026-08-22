@@ -73,13 +73,14 @@ def avg_psd(signals, params, plot_individual=False):
 
     plot_spectra(freqs, avg_powers, log_powers=True, ax=ax)
 
-    ax.set_title("Average PSD")
+    ax.grid(False, which="both")
+    ax.set_title("PSD Example")
     ax.set_xlim(0, 55)
     ax.set_ylim(-4, 0)
 
     plt.show()
 
-    return psds, avg_powers, freqs
+    return psds, avg_powers, freqs, fig, ax
 
 # ===========================================
 # ===========================================
