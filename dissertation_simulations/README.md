@@ -1,20 +1,40 @@
 # Dissertation Simulations functions
 This folder contains a list of function files that have been created. The aims of the contents of the functions contained within each file are listed below:
 
+## eeg_data
+- Load EEG data, select desired electrodes, compute PSDs, average PSDs together, plot Spectral model
+- Sweep across user-defined electrode groups and estimate the exponent from PSDs averaged across each selected group.
+- Load EEG data, select desired electrodes, compute PSDs, plot individual Spectral Models, average the resulting aperiodic exponents
+- Sweep across user-defined electrode groups and estimate the exponent from PSDs averaged across each selected group.
+
 ## electrode_signal_simulations
 - Simulating electrode signal that contains aperiodic noise only
 - Simulating electrode signal that contains aperiodic and periodic noise
 
 ## exponents
 - Generate random exponents within a given range
+- Generate random exponents for simulated electrodes and specify the electrode distribution type
+- Generate a 2D matrix of exponents for electrode simulations
+- Generate a spatially varying exponent matrix
 
 ## generate_electrodes
 - Generate multiple aperiodic signals with different exponents
 - Generate multiple "full" signals with different exponents
 - Generate a 2D grid of simulated aperiodic (1/f) EEG signals
 
+## loading_summaries
+- Load one sweep summary JSON file
+
 ## params
-- A set of dicts that contain consistent paramaters for generating electrode signals
+- A set of dicts that contain consistent parameters for generating electrode signals
+
+## plotting
+- Plot sweep results with optional error bars
+- Plot saved exponent distributions as styled box plots
+- Add significance brackets to box plots
+- Add significant within-panel Tukey brackets and preserve axis space
+- Calculate Cohen's D: group 1 mean minus group 2 mean
+- Run Tukey HSD and add Cohen's d to every comparison
 
 ## psd
 - Compute PSDs for multiple signals, plot them, and plot the average PSD. Works when electrodes are generated as a 1D array
